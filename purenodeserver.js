@@ -1,29 +1,45 @@
-const express = require('express');
+const http = require('http');
+const url = require('url');
 
-const app = express();
+function handler(req, res) {
+    const parsedUrl = url.parse(req.url, true);
 
-app.use((req, res, next) => {
     res.setHeader('x-server-date', new Date());
-    return next();
-});
 
-app.get('/', (req, res, next) => {
-    return res.send('Hello, I am a webserver');
-});
-
-app.get('/time', (req, res, next) => {
-    return res.send(new Date().toString());
-});
-
-app.get('/hello', (req, res, next) => {
-    if(!req.query.name) {
-        return res.status(400).end();
+    if(parsedUrl.pathname === '/') {
+        res.writeHead(200, {'Content-type':'text/plain'});
+        res.write('Hello, I am a webserver!');
+        return res.end();
+    } else if(parsedUrl.pathname === '/time') {
+        res.writeHead(200, {'Content-type':'text/plain'});
+        res.write(new Date().toString());
+        return res.end();
+    } else if(parsedUrl.pathname === '/hello') {
+        const name = parsedUrl.query.name;
+        if(!name) {
+            res.writeHead(400, {'Content-type':'text/plain'});
+            return res.end();  
+        }
+        res.writeHead(200, {'Content-type':'text/plain'});
+        res.write(`Hello ${name}`);
+        return res.end();
+    } else if(parsedUrl.pathname.startsWith('/user/')) {
+        const regex = new RegExp('\/user\/(.+)');
+        const matches = regex.exec(parsedUrl.pathname);
+        if(!matches || !matches[1]) {
+            res.writeHead(400, {'Content-type':'text/plain'});
+            return res.end();  
+        }
+        res.writeHead(200, {'Content-type':'text/plain'});
+        res.write(`Userpofile of ${matches[1]}`);
+        return res.end();
+    } else {
+        res.writeHead(404, {'Content-type':'text/plain'});
+        return res.end();
     }
-    return res.send(`Hello ${req.query.name}`);
-});
+}
 
-app.get('/user/:name', (req, res, next) => {
-    return res.send(`Userprofile of ${req.params.name}`);
-});
+const server = http.createServer(handler);
 
-app.listen(3000);
+server.listen(3000);
+
